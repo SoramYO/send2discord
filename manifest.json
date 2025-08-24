@@ -1,0 +1,32 @@
+{
+  "name": "Send Image to Discord",
+  "description": "Chọn ảnh trên trang và gửi lên Discord qua webhook.",
+  "version": "1.5.0",
+  "manifest_version": 3,
+  "permissions": [
+    "contextMenus",
+    "storage",
+    "scripting",
+    "activeTab"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_title": "Send to Discord" },
+  "commands": {
+    "send-current-to-discord": {
+      "suggested_key": {
+        "default": "Alt+Shift+S"
+      },
+      "description": "Bật chế độ chọn ảnh và gửi lên Discord"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_page": "options.html",
+  "icons": { "128": "icons/icon128.png" }
+}
