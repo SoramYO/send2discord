@@ -215,11 +215,27 @@ function stopPicker(cancelled) {
 }
 
 function pickConfirm() {
+  // Ưu tiên tìm một media cụ thể từ phần tử được trỏ vào đầu tiên.
+  // Đây là phần sửa lỗi chính.
+  const singleMedia = findMediaFromElement(hoverEl);
 
+  if (singleMedia) {
+    // Nếu tìm thấy một ảnh/video cụ thể, chỉ gửi media đó và dừng lại.
+    stopPicker(false);
+    sendSelectedMedia([{
+      url: singleMedia.url,
+      element: hoverEl,
+      index: 0,
+      width: 0,
+      height: 0,
+      type: singleMedia.type
+    }]);
+    return; // Dừng thực thi tại đây.
+  }
 
-  // Tìm container hợp lý (là chính element hoặc cha gần nhất có nhiều media)
+  // Nếu không tìm thấy media trực tiếp, thì mới tìm kiếm vùng chứa cha.
+  // Điều này giữ lại tính năng chọn nhiều ảnh trong các thư viện ảnh.
   let container = hoverEl;
-  
   for (let i = 0; i < 5 && container; i++) {
     const imgs = container.querySelectorAll("img");
     const videos = container.querySelectorAll("video");
@@ -231,7 +247,7 @@ function pickConfirm() {
 
   let allMedia = [];
   if (container) {
-    // Get all images
+    // Lấy tất cả ảnh
     const imgs = container.querySelectorAll("img");
     const imageData = Array.from(imgs)
       .map((img, index) => {
@@ -251,7 +267,7 @@ function pickConfirm() {
         return isValid;
       });
     
-    // Get all videos
+    // Lấy tất cả video
     const videos = container.querySelectorAll("video");
     const videoData = Array.from(videos)
       .map((video, index) => {
@@ -259,7 +275,7 @@ function pickConfirm() {
         return {
           url: src,
           element: video,
-          index: imageData.length + index, // Continue indexing after images
+          index: imageData.length + index, // Tiếp tục chỉ mục sau ảnh
           width: video.videoWidth || video.clientWidth,
           height: video.videoHeight || video.clientHeight,
           type: 'video'
@@ -273,39 +289,23 @@ function pickConfirm() {
     
     allMedia = [...imageData, ...videoData];
   }
-
-  // Nếu không có list thì fallback như cũ
-  if (allMedia.length === 0) {
-    const single = findMediaFromElement(hoverEl);
-    if (single) {
-      allMedia = [{
-        url: single.url,
-        element: hoverEl,
-        index: 0,
-        width: 0,
-        height: 0,
-        type: single.type
-      }];
-    }
-  }
-
-
-  // Stop picker and show selection UI
+  
+  // Dừng picker và hiển thị giao diện chọn
   stopPicker(false);
 
-  // If only one media item, send it directly
+  // Nếu chỉ có một media, gửi trực tiếp
   if (allMedia.length === 1) {
     sendSelectedMedia([allMedia[0]]);
     return;
   }
 
-  // If multiple media items, show selection UI
+  // Nếu có nhiều media, hiển thị giao diện chọn
   if (allMedia.length > 1) {
     showMediaSelector(allMedia);
     return;
   }
 
-  // No media found
+  // Nếu không tìm thấy media
   chrome.runtime.sendMessage({ 
     action: "pickerResult", 
     payload: { 
